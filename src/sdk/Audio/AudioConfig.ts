@@ -4,6 +4,7 @@
 // tslint:disable:max-classes-per-file
 
 import { PathLike } from "fs";
+import { Readable } from "stream";
 import {
     FileAudioSource,
     MicAudioSource,
@@ -109,6 +110,32 @@ export abstract class AudioConfig {
         }
 
         throw new Error("Not Supported Type");
+    }
+
+    /**
+     * Creates an AudioConfig object from a standard Readable stream.
+     * Useful when streaming audio from external network sources (e.g., ffmpeg UDP stream into a Docker container).
+     * @member AudioConfig.fromReadableStream
+     * @function
+     * @public
+     * @param {Readable} audioStream - Custom audio input from a Readable stream. Currently, only WAV / PCM is supported.
+     * @param {AudioStreamFormat} format - The audio data format in which audio
+     *        will be returned from the stream's read() method.
+     * @returns {AudioConfig} The audio output configuration being created.
+     */
+    public static fromReadableStream(audioStream: Readable, format?: AudioStreamFormat): AudioConfig {
+        const pushStream = AudioInputStream.createPushStream(format);
+
+        audioStream.on('readable', () => {
+            const buffer = audioStream.read();
+            if (buffer === null) {
+                pushStream.close();
+            } else {
+                pushStream.write(buffer);
+            }
+        });
+
+        return AudioConfig.fromStreamInput(pushStream);
     }
 
     /**
