@@ -127,6 +127,7 @@ export abstract class Recognizer {
             if (this.privReco) {
                 await this.privReco.audioSource.turnOff();
                 await this.privReco.dispose();
+                delete this.privReco;
             }
         }
     }
